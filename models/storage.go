@@ -50,7 +50,7 @@ func (s *PostgresStore) AddPatient(p *Patient) error {
 
 	err := s.db.QueryRow(query, p.Name, p.Age, p.Gender, p.Diagnosis, p.CreatedBy).Scan(&p.ID)
 	if err != nil {
-		return fmt.Errorf("Error inserting patient details: %v", err)
+		return fmt.Errorf("error inserting patient details: %v", err)
 	}
 	return nil
 }
@@ -61,7 +61,7 @@ func (s *PostgresStore) GetPatients() ([]*Patient, error) {
 
 	rows, err := s.db.Query(query)
 	if err != nil {
-		return nil, fmt.Errorf("Error fetching patients details: %v", err)
+		return nil, fmt.Errorf("error fetching patients details: %v", err)
 	}
 
 	defer rows.Close()
