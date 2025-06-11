@@ -1,11 +1,13 @@
 package routes
 
 import (
+	"github.com/Faizan2005/Golang_Coding_Assessment_Makerble/models"
 	"github.com/gofiber/fiber/v2"
 )
 
 type APIServer struct {
 	listenAddr string
+	storage    models.Storage
 }
 
 func NewAPIServer(listenAddr string) *APIServer {
