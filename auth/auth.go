@@ -28,12 +28,21 @@ func JWTMiddleware(c *fiber.Ctx) error {
 	}
 
 	claims, ok := token.Claims.(jwt.MapClaims)
-
 	if !ok {
 		return c.Status(401).JSON(fiber.Map{"error": "Failed to extract claims"})
 	}
 
-	c.Locals("user", claims["sub"])
+	userID, ok := claims["sub"].(string)
+	if !ok {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "User ID claim missing or invalid"})
+	}
+	userRole, ok := claims["role"].(string)
+	if !ok {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "User role claim missing or invalid"})
+	}
+
+	c.Locals("userID", userID)
+	c.Locals("userRole", userRole)
 	return c.Next()
 }
 
@@ -46,4 +55,27 @@ func ParseJWT(tokenString string) (*jwt.Token, error) {
 	})
 
 	return token, err
+}
+
+func RoleMiddleware(allowedRoles ...string) fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		userRole := c.Locals("userRole")
+
+		if userRole == nil {
+			return c.Status(fiber.StatusForbidden).JSON(fiber.Map{"error": "Access denied: User role not found"})
+		}
+
+		roleStr, ok := userRole.(string)
+		if !ok {
+			return c.Status(fiber.StatusForbidden).JSON(fiber.Map{"error": "Access denied: Invalid role format"})
+		}
+
+		for _, allowed := range allowedRoles {
+			if roleStr == allowed {
+				return c.Next()
+			}
+		}
+
+		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{"error": "Access denied: Insufficient permissions for this action"})
+	}
 }

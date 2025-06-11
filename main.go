@@ -26,6 +26,6 @@ func main() {
 	}
 
 	listenAddr := ":3000"
-	server := routes.NewAPIServer(listenAddr, store)
+	server := routes.NewAPIServer(listenAddr, store, store)
 	server.Run()
 }

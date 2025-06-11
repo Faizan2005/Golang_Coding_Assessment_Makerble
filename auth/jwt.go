@@ -9,14 +9,23 @@ import (
 	jwt "github.com/golang-jwt/jwt/v5"
 )
 
-var secret = os.Getenv("JWT_SECRET")
+//var secret = os.Getenv("JWT_SECRET")
 
 func GenerateToken(u *models.User) (string, error) {
+	secret := os.Getenv("JWT_SECRET")
+	// --- ADD THIS PRINT STATEMENT ---
+	fmt.Printf("DEBUG: JWT_SECRET in GenerateToken is: '%s' (Length: %d)\n", secret, len(secret))
+	// -----------------------------
+	if secret == "" {
+		return "", fmt.Errorf("JWT_SECRET environment variable not set")
+	}
+
 	claims := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"sub": u.ID,
-		"iss": "Expense-Tracker",
-		"exp": time.Now().Add(time.Hour).Unix(),
-		"iat": time.Now().Unix(),
+		"sub":  u.ID,
+		"role": u.Role,
+		"iss":  "Hospital-Portal",
+		"exp":  time.Now().Add(time.Hour * 24).Unix(),
+		"iat":  time.Now().Unix(),
 	})
 
 	fmt.Printf("Token Claims added %+v\n", claims)
