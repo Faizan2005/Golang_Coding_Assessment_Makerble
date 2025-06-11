@@ -10,9 +10,10 @@ type APIServer struct {
 	storage    models.Storage
 }
 
-func NewAPIServer(listenAddr string) *APIServer {
+func NewAPIServer(listenAddr string, storage models.Storage) *APIServer {
 	return &APIServer{
 		listenAddr: listenAddr,
+		storage:    storage,
 	}
 }
 

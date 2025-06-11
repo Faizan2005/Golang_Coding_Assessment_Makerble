@@ -88,7 +88,7 @@ func (s *PostgresStore) GetPatientByID(id string) (*Patient, error) {
 
 	err := s.db.QueryRow(query, id).Scan(&p.ID, &p.Name, &p.Age, &p.Gender, &p.Diagnosis, &p.CreatedBy)
 	if err != nil {
-		return nil, fmt.Errorf("Error fetching patient details: %v", err)
+		return nil, fmt.Errorf("error fetching patient details: %v", err)
 	}
 
 	return &p, nil
