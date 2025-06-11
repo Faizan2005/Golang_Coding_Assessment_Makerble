@@ -32,21 +32,63 @@ func (s *APIServer) Run() {
 }
 
 func (s *APIServer) handleAddPatient(c *fiber.Ctx) error {
+	var p models.Patient
 
+	if err := c.BodyParser(&p); err != nil {
+		return c.Status(400).JSON(fiber.Map{"error": "Invalid request"})
+	}
+
+	if err := s.storage.AddPatient(&p); err != nil {
+		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
+	}
+
+	return c.JSON(p)
 }
 
 func (s *APIServer) handleGetPatients(c *fiber.Ctx) error {
+	patients, err := s.storage.GetPatients()
+	if err != nil {
+		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
+	}
 
+	return c.JSON(patients)
 }
 
 func (s *APIServer) handleGetPatientByID(c *fiber.Ctx) error {
+	id := c.Params("id")
 
+	patient, err := s.storage.GetPatientByID(id)
+	if err != nil {
+		return c.Status(404).JSON(fiber.Map{"error": "Patient details not found"})
+	}
+
+	return c.JSON(patient)
 }
 
 func (s *APIServer) handleUpdatePatientByID(c *fiber.Ctx) error {
+	id := c.Params("id")
 
+	var p models.Patient
+
+	if err := c.BodyParser(&p); err != nil {
+		return c.Status(400).JSON(fiber.Map{"error": "Invalid request body"})
+	}
+
+	p.ID = id
+
+	if err := s.storage.UpdatePatient(&p); err != nil {
+		return c.Status(404).JSON(fiber.Map{"error": "Patient details not found"})
+	}
+
+	return c.JSON(p)
 }
 
 func (s *APIServer) handleDeletePatientByID(c *fiber.Ctx) error {
+	id := c.Params("id")
 
+	if err := s.storage.DeletePatientByID(id); err != nil {
+		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
+	}
+
+	return c.SendStatus(204)
 }

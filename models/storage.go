@@ -26,7 +26,7 @@ type Storage interface {
 	AddPatient(*Patient) error
 	GetPatients() ([]*Patient, error)
 	GetPatientByID(string) (*Patient, error)
-	UpdatePatient(string) error
+	UpdatePatient(*Patient) error
 	DeletePatientByID(string) error
 }
 
