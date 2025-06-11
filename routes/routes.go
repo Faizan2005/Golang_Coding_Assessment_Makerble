@@ -1,6 +1,7 @@
 package routes
 
 import (
+	auth "github.com/Faizan2005/Golang_Coding_Assessment_Makerble/auth"
 	"github.com/Faizan2005/Golang_Coding_Assessment_Makerble/models"
 	"github.com/gofiber/fiber/v2"
 )
@@ -8,25 +9,30 @@ import (
 type APIServer struct {
 	listenAddr string
 	storage    models.Storage
+	account    models.Account
 }
 
-func NewAPIServer(listenAddr string, storage models.Storage) *APIServer {
+func NewAPIServer(listenAddr string, storage models.Storage, account models.Account) *APIServer {
 	return &APIServer{
 		listenAddr: listenAddr,
 		storage:    storage,
+		account:    account,
 	}
 }
 
 func (s *APIServer) Run() {
 	app := fiber.New()
 
-	api1 := app.Group("/patients")
+	api1 := app.Group("/patients", auth.JWTMiddleware)
 
 	api1.Post("/", s.handleAddPatient)
 	api1.Get("/", s.handleGetPatients)
 	api1.Get("/:id", s.handleGetPatientByID)
 	api1.Put("/:id", s.handleUpdatePatientByID)
 	api1.Delete("/:id", s.handleDeletePatientByID)
+
+	app.Post("/register", s.handleCreateUserAccount)
+	app.Post("/login", s.handleLoginUserAccount)
 
 	app.Listen(s.listenAddr)
 }
@@ -91,4 +97,43 @@ func (s *APIServer) handleDeletePatientByID(c *fiber.Ctx) error {
 	}
 
 	return c.SendStatus(204)
+}
+
+func (s *APIServer) handleCreateUserAccount(c *fiber.Ctx) error {
+	var u models.User
+
+	if err := c.BodyParser(&u); err != nil {
+		return c.Status(400).JSON(fiber.Map{"error": "Invalid request"})
+	}
+
+	err := s.account.CreateUserAccount(&u)
+	if err != nil {
+		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
+	}
+
+	return c.JSON(u)
+}
+
+func (s *APIServer) handleLoginUserAccount(c *fiber.Ctx) error {
+	var user models.LoginUser
+
+	if err := c.BodyParser(&user); err != nil {
+		return c.Status(400).JSON(fiber.Map{"error": "Invalid request"})
+	}
+
+	dbuser, err := s.account.LoginUserAccount(&user)
+	if err != nil {
+		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
+	}
+
+	TokenString, err := auth.GenerateToken(dbuser)
+	if err != nil {
+		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
+	}
+
+	return c.JSON(fiber.Map{
+		"token":   "Bearer " + TokenString,
+		"message": "Login successful",
+	})
+
 }

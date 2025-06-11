@@ -3,6 +3,8 @@ package models
 import (
 	"database/sql"
 	"fmt"
+
+	"golang.org/x/crypto/bcrypt"
 )
 
 type User struct {
@@ -11,6 +13,11 @@ type User struct {
 	Email    string `json:"email" db:"email"`
 	Password string `json:"-" db:"password"`
 	Role     string `json:"role" db:"role"`
+}
+
+type LoginUser struct {
+	Email    string `json:"email" db:"email"`
+	Password string `json:"-" db:"password"`
 }
 
 type Patient struct {
@@ -28,6 +35,11 @@ type Storage interface {
 	GetPatientByID(string) (*Patient, error)
 	UpdatePatient(*Patient) error
 	DeletePatientByID(string) error
+}
+
+type Account interface {
+	CreateUserAccount(*User) error
+	LoginUserAccount(*LoginUser) (*User, error)
 }
 
 type PostgresStore struct {
@@ -105,4 +117,54 @@ func (s *PostgresStore) DeletePatientByID(id string) error {
 
 	_, err := s.db.Exec(query, id)
 	return err
+}
+
+func (s *PostgresStore) CreateUserAccount(u *User) error {
+	hashedPassword, _ := hashPassword(u)
+
+	query := `INSERT INTO users (name, email, password, role)
+	VALUES ($1, $2, $3, $4)
+	RETURNING id`
+
+	err := s.db.QueryRow(query, u.Name, u.Email, hashedPassword, u.Role).Scan(&u.ID)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (s *PostgresStore) LoginUserAccount(u *LoginUser) (*User, error) {
+	var dbuser User
+
+	query := `SELECT id, name, email, password, role FROM users WHERE email=$1`
+
+	err := s.db.QueryRow(query, u.Email).Scan(&dbuser.ID, &dbuser.Name, &dbuser.Email, &dbuser.Password, &dbuser.Role)
+
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, fmt.Errorf("Invalid email or password")
+		}
+		return nil, err
+	}
+
+	if !checkPassword(dbuser.Password, u.Password) {
+		return nil, fmt.Errorf("Invalid email or password")
+	}
+
+	return &dbuser, nil
+}
+
+func hashPassword(u *User) ([]byte, error) {
+	password, err := bcrypt.GenerateFromPassword([]byte(u.Password), bcrypt.DefaultCost)
+	if err != nil {
+		return nil, err
+	}
+
+	return password, nil
+}
+
+func checkPassword(hashedPassword, password string) bool {
+	err := bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(password))
+	return err == nil
 }
