@@ -1,7 +1,9 @@
 package routes
 
 import (
+	"bytes"
 	"database/sql"
+	"encoding/csv"
 	"fmt"
 	"log"
 	"strings"
@@ -258,27 +260,41 @@ func (s *APIServer) handleExportPatientCSV(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": err.Error()})
 	}
 
-	csvContent := "ID,Name,Age,Gender,Diagnosis,Created By\n"
+	var buf bytes.Buffer
+	writer := csv.NewWriter(&buf)
 
-	// Data row
+	header := []string{"ID", "Name", "Age", "Gender", "Diagnosis", "Created By"}
+	if err := writer.Write(header); err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to write CSV header"})
+	}
+
 	diagnosisValue := ""
 	if patient.Diagnosis.Valid {
 		diagnosisValue = patient.Diagnosis.String
 	}
 
-	csvContent += fmt.Sprintf("%s,%s,%d,%s,\"%s\",%s\n",
+	dataRow := []string{
 		patient.ID,
 		patient.Name,
-		patient.Age,
+		fmt.Sprintf("%d", patient.Age),
 		patient.Gender,
-		strings.ReplaceAll(diagnosisValue, "\"", "\"\""),
+		diagnosisValue,
 		patient.CreatedBy,
-	)
+	}
+
+	if err := writer.Write(dataRow); err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to write CSV data"})
+	}
+
+	writer.Flush()
+	if err := writer.Error(); err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": fmt.Sprintf("Failed to flush CSV writer: %v", err)})
+	}
 
 	c.Set("Content-Type", "text/csv")
 	c.Set("Content-Disposition", fmt.Sprintf("attachment; filename=\"patient_%s.csv\"", patient.ID))
 
-	return c.SendString(csvContent)
+	return c.Send(buf.Bytes())
 }
 
 func (s *APIServer) handleCreateUserAccount(c *fiber.Ctx) error {
