@@ -17,9 +17,33 @@ func NewAPIServer(listenAddr string) *APIServer {
 func (s *APIServer) Run() {
 	app := fiber.New()
 
-	app.Post("/", func(c *fiber.Ctx) error {
-		return c.SendString("Hello from POST route!")
-	})
+	api1 := app.Group("/patients")
+
+	api1.Post("/", s.handleAddPatient)
+	api1.Get("/", s.handleGetPatients)
+	api1.Get("/:id", s.handleGetPatientByID)
+	api1.Put("/:id", s.handleUpdatePatientByID)
+	api1.Delete("/:id", s.handleDeletePatientByID)
 
 	app.Listen(s.listenAddr)
+}
+
+func (s *APIServer) handleAddPatient(c *fiber.Ctx) error {
+
+}
+
+func (s *APIServer) handleGetPatients(c *fiber.Ctx) error {
+
+}
+
+func (s *APIServer) handleGetPatientByID(c *fiber.Ctx) error {
+
+}
+
+func (s *APIServer) handleUpdatePatientByID(c *fiber.Ctx) error {
+
+}
+
+func (s *APIServer) handleDeletePatientByID(c *fiber.Ctx) error {
+
 }
