@@ -4,8 +4,6 @@ This project provides a robust backend for managing patient records, complete wi
 
 ## Key Features & Enhancements
 
-This API goes beyond basic patient management by incorporating:
-
 *   **Role-Based Access Control:**
     
     *   **Receptionists** have permissions to register new users, **add new patients** (without diagnosis), **update patient details** (excluding diagnosis), **retrieve patient lists**, and **delete patients**.
