@@ -41,16 +41,23 @@ Before you begin, ensure you have the following installed on your system:
     
     *   [Download Go](https://golang.org/doc/install "null")
         
-3.  **PostgreSQL**: A running PostgreSQL instance that your application can connect to.
+3.  **PostgreSQL**: A running PostgreSQL instance (with its command-line client `psql`) that your application can connect to.
     
-    *   You can install it directly on your machine, or use a tool like Docker to run a temporary instance (e.g., `docker run --name some-postgres -e POSTGRES_PASSWORD=mysecretpassword -p 5432:5432 -d postgres`).
+    *   If you don't have PostgreSQL installed, you can follow installation instructions for your operating system (e.g., [PostgreSQL Downloads](https://www.postgresql.org/download/ "null")).
+        
+    *   Alternatively, for a quick setup, you can run a PostgreSQL instance using Docker:
+        
+            docker run --name some-postgres -e POSTGRES_PASSWORD=mysecretpassword -p 5432:5432 -d postgres
+            
+        
+        (Replace `mysecretpassword` with a strong password).
         
 
 ### Project Setup
 
 1.  **Clone the Repository:** Open your terminal or command prompt and clone the project:
     
-        git clone https://github.com/Faizan2005/Golang_Coding_Assessment_Makerble.git # Replace with your actual repo name if different
+        git clone https://github.com/Faizan2005/Golang_Coding_Assessment_Makerble.git
         cd Golang_Coding_Assessment_Makerble
         
     
@@ -65,86 +72,49 @@ Before you begin, ensure you have the following installed on your system:
         
             # .env - Environment variables for the application
             DB_USER=your_postgres_user      # e.g., postgres
-            DB_PASSWORD=your_postgres_password # <--- CHANGE THIS!
+            DB_PASSWORD=your_postgres_password 
             DB_NAME=hospital
-            DB_HOST=localhost               # Or your DB host IP/hostname
+            DB_HOST=localhost               # Or your DB host IP/hostname (e.g., if using Docker, it might be the container's IP or a specific host)
             DB_PORT=5432
-            JWT_SECRET=your_super_strong_random_jwt_secret_key_atleast_32_chars # <--- CHANGE THIS!
-            LISTEN_ADDR=:3000               # Port your Go app will listen on
+            JWT_SECRET=cjnvjerfg48unvbjirnv9854hg8945tu895hgf8tu34
+            LISTEN_ADDR=3000               # Port your Go app will listen on
             
         
         *   **Important:** Ensure your `JWT_SECRET` is a long, random string for security.
             
-3.  **Prepare Database Schema Initialization:** The application is designed to create its necessary database tables (`users` and `patients`) automatically on startup if they don't already exist.
+3.  **Manually Set Up the PostgreSQL Database and Schema:** You need to create the database and its tables in your PostgreSQL instance.
     
-    *   **ACTION REQUIRED IN YOUR GO CODE:** You need to implement a function in your Go application (e.g., in your `config` package or a new `migrations` package) that reads and executes the SQL content from `migrations/init.sql` against your connected PostgreSQL database. This function should be called from `main.go` right after the database connection is established.
+    *   **a. Create the Database:** Open your PostgreSQL client (like `psql` in your terminal) and connect to your PostgreSQL server (e.g., using `psql -U postgres`). Then, create the database (if it doesn't already exist):
         
-    *   Create a `migrations` directory and `init.sql` file:
-        
-            mkdir -p migrations
-            touch migrations/init.sql
+            CREATE DATABASE hospital;
             
         
-    *   Open `migrations/init.sql` and paste the exact table schemas (as provided in the "Database Schema" section below):
+        (Replace `hospital` with the `DB_NAME` you've set in your `.env` file if different).
         
-            -- migrations/init.sql
-            
-            -- Create the users table if it doesn't exist
-            CREATE TABLE IF NOT EXISTS users (
-                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-                name VARCHAR(255) NOT NULL,
-                email VARCHAR(255) UNIQUE NOT NULL,
-                password VARCHAR(255) NOT NULL,
-                role VARCHAR(255) NOT NULL
-            );
-            
-            -- Add the CHECK constraint for the role column if it doesn't exist
-            DO $$ BEGIN
-                IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'users_role_check') THEN
-                    ALTER TABLE users ADD CONSTRAINT users_role_check CHECK (role::text = ANY (ARRAY['receptionist'::character varying, 'doctor'::character varying]::text[]));
-                END IF;
-            END $$;
-            
-            
-            -- Create the patients table if it doesn't exist
-            CREATE TABLE IF NOT EXISTS patients (
-                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-                name VARCHAR(255) NOT NULL,
-                age INTEGER NOT NULL,
-                gender VARCHAR(255) NOT NULL,
-                diagnosis TEXT, -- This column is NULLABLE
-                created_by UUID NOT NULL
-            );
-            
-            -- Add the Foreign Key constraint if it doesn't exist
-            DO $$ BEGIN
-                IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'patients_created_by_fkey') THEN
-                    ALTER TABLE patients ADD CONSTRAINT patients_created_by_fkey FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE RESTRICT;
-                END IF;
-            END $$;
-            
-            
-            -- Optional: Create indexes for improved query performance
-            CREATE INDEX IF NOT EXISTS idx_users_email ON users (email);
-            CREATE INDEX IF NOT EXISTS idx_patients_name ON patients (name);
+    *   **b. Apply the Schema:** Navigate to your project's root directory in the terminal. Then, use the `psql` command to execute the schema script:
+        
+            psql -U your_postgres_user -d hospital -h localhost -p 5432 -f ./migrations/init.sql
             
         
+        *   Replace `your_postgres_user` with the username you've configured for your PostgreSQL.
+            
+        *   Ensure `hospital`, `localhost`, and `5432` match your `DB_NAME`, `DB_HOST`, and `DB_PORT` from your `.env` file.
+            
+        *   You will be prompted for your PostgreSQL password.
+            
 4.  **Install Go Dependencies:**
     
         go mod tidy
         
     
-5.  **Run the Go Application:**
+5.  **Run the Go Application using Makefile:** This command will build your Go application and then run it, using the environment variables from your `.env` file for database connection.
     
-        go run main.go
+        make run
         
     
-    *   Your application will attempt to connect to the PostgreSQL database using the credentials from your `.env` file and then run the schema initialization.
-        
     *   Look for the message: `Application starting on :3000` (or whatever `LISTEN_ADDR` you set).
         
     *   Once this message appears, your API is up and running on `http://localhost:3000`.
-        
 
 ## How to Use the API
 
@@ -237,16 +207,16 @@ Log in as each user to obtain their **JWT token**.
 
 #### Now, use `$RECEPTIONIST_TOKEN` or `$DOCTOR_TOKEN` for subsequent authenticated requests.
 
-### Receptionist Portal Endpoints (`/api/v1/receptionist/patients`)
+### Receptionist Portal Endpoints (`/api/receptionist/patients`)
 
 Receptionists manage core patient information.
 
-#### 3\. `POST /api/v1/receptionist/patients` – Add a New Patient
+#### 3\. `POST /api/receptionist/patients` – Add a New Patient
 
 **Receptionists add patients without specifying diagnosis.** The API explicitly sets diagnosis to `NULL`. **Attempts to include a `diagnosis` field in the request by a receptionist will be rejected.**
 
     curl -X POST \
-      "$BASE_URL/api/v1/receptionist/patients" \
+      "$BASE_URL/api/receptionist/patients" \
       -H 'Content-Type: application/json' \
       -H "Authorization: $RECEPTIONIST_TOKEN" \
       -d '{
@@ -258,38 +228,38 @@ Receptionists manage core patient information.
 
 **ACTION:** From the successful JSON response, copy the **`id`** value (e.g., `"id": "some-uuid"`) and update the `PATIENT_ID` variable: `PATIENT_ID="<COPIED_PATIENT_UUID_HERE>"`
 
-#### 4\. `GET /api/v1/receptionist/patients` – Get Patients (Search & Pagination)
+#### 4\. `GET /api/receptionist/patients` – Get Patients (Search & Pagination)
 
 Receptionists can retrieve patient lists with powerful filtering and pagination.
 
 *   **Get all patients (default pagination: page 1, limit 10, no search query):**
     
         curl -X GET \
-          "$BASE_URL/api/v1/receptionist/patients" \
+          "$BASE_URL/api/receptionist/patients" \
           -H "Authorization: $RECEPTIONIST_TOKEN"
         
     
 *   **Get patients filtered by name (partial & case-insensitive search):**
     
         curl -X GET \
-          "$BASE_URL/api/v1/receptionist/patients?name=x" \
+          "$BASE_URL/api/receptionist/patients?name=x" \
           -H "Authorization: $RECEPTIONIST_TOKEN"
         
     
 *   **Get patients with specific pagination (e.g., page 1, limit 1 result):**
     
         curl -X GET \
-          "$BASE_URL/api/v1/receptionist/patients?page=1&limit=1" \
+          "$BASE_URL/api/receptionist/patients?page=1&limit=1" \
           -H "Authorization: $RECEPTIONIST_TOKEN"
         
     
 
-#### 5\. `PUT /api/v1/receptionist/patients/:id` – Update Patient Details
+#### 5\. `PUT /api/receptionist/patients/:id` – Update Patient Details
 
 **Receptionists can only update `name`, `age`, and `gender`.** If a `diagnosis` field is included in the request body, the API will specifically reject the request with a `400 Bad Request` error.
 
     curl -X PUT \
-      "$BASE_URL/api/v1/receptionist/patients/$PATIENT_ID" \
+      "$BASE_URL/api/receptionist/patients/$PATIENT_ID" \
       -H 'Content-Type: application/json' \
       -H "Authorization: $RECEPTIONIST_TOKEN" \
       -d '{
@@ -299,16 +269,16 @@ Receptionists can retrieve patient lists with powerful filtering and pagination.
       }'
     
 
-### Doctor Portal Endpoints (`/api/v1/doctor/patients`)
+### Doctor Portal Endpoints (`/api/doctor/patients`)
 
 Doctors focus primarily on patient diagnosis and viewing records.
 
-#### 6\. `PUT /api/v1/doctor/patients/:id` – Update Patient Diagnosis
+#### 6\. `PUT /api/doctor/patients/:id` – Update Patient Diagnosis
 
 **Doctors can ONLY update the `diagnosis` field.** Any other fields (like `name`, `age`, `gender`) provided in the request body will be **ignored** by the API, ensuring strict adherence to doctor's specific responsibilities.
 
     curl -X PUT \
-      "$BASE_URL/api/v1/doctor/patients/$PATIENT_ID" \
+      "$BASE_URL/api/doctor/patients/$PATIENT_ID" \
       -H 'Content-Type: application/json' \
       -H "Authorization: $DOCTOR_TOKEN" \
       -d '{
@@ -317,12 +287,12 @@ Doctors focus primarily on patient diagnosis and viewing records.
       }'
     
 
-#### 7\. `GET /api/v1/doctor/patients` – Get Patients (Search & Pagination)
+#### 7\. `GET /api/doctor/patients` – Get Patients (Search & Pagination)
 
 Doctors have the same search and pagination capabilities as receptionists for retrieving patient lists.
 
     curl -X GET \
-      "$BASE_URL/api/v1/doctor/patients?name=patient&page=1&limit=10" \
+      "$BASE_URL/api/doctor/patients?name=patient&page=1&limit=10" \
       -H "Authorization: $DOCTOR_TOKEN"
     
 
@@ -330,18 +300,18 @@ Doctors have the same search and pagination capabilities as receptionists for re
 
 Both roles can export patient data.
 
-#### 8\. `GET /api/v1/receptionist/patients/:id/export/csv` – Export Patient to CSV (Receptionist)
+#### 8\. `GET /api/receptionist/patients/:id/export/csv` – Export Patient to CSV (Receptionist)
 
     curl -X GET \
-      "$BASE_URL/api/v1/receptionist/patients/$PATIENT_ID/export/csv" \
+      "$BASE_URL/api/receptionist/patients/$PATIENT_ID/export/csv" \
       -H "Authorization: $RECEPTIONIST_TOKEN" \
       -o "receptionist_patient_demo.csv" # Saves the CSV output to a local file
     
 
-#### 9\. `GET /api/v1/doctor/patients/:id/export/csv` – Export Patient to CSV (Doctor)
+#### 9\. `GET /api/doctor/patients/:id/export/csv` – Export Patient to CSV (Doctor)
 
     curl -X GET \
-      "$BASE_URL/api/v1/doctor/patients/$PATIENT_ID/export/csv" \
+      "$BASE_URL/api/doctor/patients/$PATIENT_ID/export/csv" \
       -H "Authorization: $DOCTOR_TOKEN" \
       -o "doctor_patient_demo.csv"
     
@@ -350,10 +320,10 @@ Both roles can export patient data.
 
 These examples explicitly demonstrate the API's strict role enforcement.
 
-#### 10\. Doctor Tries to Add a Patient (`POST /api/v1/receptionist/patients`)
+#### 10\. Doctor Tries to Add a Patient (`POST /api/receptionist/patients`)
 
     curl -X POST \
-      "$BASE_URL/api/v1/receptionist/patients" \
+      "$BASE_URL/api/receptionist/patients" \
       -H 'Content-Type: application/json' \
       -H "Authorization: $DOCTOR_TOKEN" \
       -d '{
@@ -365,10 +335,10 @@ These examples explicitly demonstrate the API's strict role enforcement.
 
 **Expected:** `403 Forbidden` status with an "Access denied: Insufficient permissions" error.
 
-#### 11\. Receptionist Tries to Update Patient Diagnosis (`PUT /api/v1/receptionist/patients/:id`)
+#### 11\. Receptionist Tries to Update Patient Diagnosis (`PUT /api/receptionist/patients/:id`)
 
     curl -X PUT \
-      "$BASE_URL/api/v1/receptionist/patients/$PATIENT_ID" \
+      "$BASE_URL/api/receptionist/patients/$PATIENT_ID" \
       -H 'Content-Type: application/json' \
       -H "Authorization: $RECEPTIONIST_TOKEN" \
       -d '{
@@ -431,7 +401,3 @@ The API's database schema is defined as follows:
             REFERENCES users(id)
             ON DELETE RESTRICT
     );
-    
-    -- Indexes for performance
-    CREATE INDEX idx_users_email ON users (email);
-    CREATE INDEX idx_patients_name ON patients (name);
