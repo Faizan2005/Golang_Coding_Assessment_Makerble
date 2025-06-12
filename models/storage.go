@@ -32,7 +32,7 @@ type Patient struct {
 type Storage interface {
 	AddPatient(*Patient) error
 	GetPatients(string, int, int) ([]*Patient, error)
-	GetTotalPatientsCount(string) (int, error)
+	//GetTotalPatientsCount(string) (int, error)
 	GetPatientByID(string) (*Patient, error)
 	UpdatePatient(*Patient) error
 	DeletePatientByID(string) error
@@ -102,23 +102,23 @@ func (s *PostgresStore) GetPatients(nameQuery string, limit, offset int) ([]*Pat
 	return Patients, nil
 }
 
-func (s *PostgresStore) GetTotalPatientsCount(nameQuery string) (int, error) {
-	query := `SELECT COUNT(*) FROM patients`
-	args := []interface{}{}
-	paramCount := 1
+// func (s *PostgresStore) GetTotalPatientsCount(nameQuery string) (int, error) {
+// 	query := `SELECT COUNT(*) FROM patients`
+// 	args := []interface{}{}
+// 	paramCount := 1
 
-	if nameQuery != "" {
-		query += fmt.Sprintf(" WHERE name ILIKE '%%' || $%d || '%%'", paramCount)
-		args = append(args, nameQuery)
-	}
+// 	if nameQuery != "" {
+// 		query += fmt.Sprintf(" WHERE name ILIKE '%%' || $%d || '%%'", paramCount)
+// 		args = append(args, nameQuery)
+// 	}
 
-	var count int
-	err := s.db.QueryRow(query, args...).Scan(&count)
-	if err != nil {
-		return 0, fmt.Errorf("error getting total patient count: %w", err)
-	}
-	return count, nil
-}
+// 	var count int
+// 	err := s.db.QueryRow(query, args...).Scan(&count)
+// 	if err != nil {
+// 		return 0, fmt.Errorf("error getting total patient count: %w", err)
+// 	}
+// 	return count, nil
+// }
 
 func (s *PostgresStore) GetPatientByID(id string) (*Patient, error) {
 	query := `SELECT id, name, age, gender, diagnosis, created_by FROM patients WHERE id=$1`
