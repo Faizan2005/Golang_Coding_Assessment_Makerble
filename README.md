@@ -1,6 +1,6 @@
 # Go Patient Portal API: A Role-Based Patient Management System
 
-Welcome to the Go Patient Portal API! This project provides a robust backend for managing patient records, complete with secure **user authentication**, **role-based access control**, and efficient **CRUD operations**.
+This project provides a robust backend for managing patient records, complete with secure **user authentication**, **role-based access control**, and efficient **CRUD operations**.
 
 ## Key Features & Enhancements
 
@@ -25,7 +25,10 @@ This API goes beyond basic patient management by incorporating:
 *   **Robust Error Handling:** The API includes comprehensive validation and explicit error handling for all endpoints, ensuring data integrity and providing clear feedback for invalid requests or internal issues. Edge cases are robustly handled by the API's logic.
     
 *   **Database Persistence:** Leverages **PostgreSQL** as a reliable and scalable relational database for data storage.
-    
+
+
+## Demo Video Link
+[![Watch the video](preview.png)](https://drive.google.com/file/d/13L5KZUUhUw1fndn6n9ap8tRca4Ox7S8R/view)
 
 ## Getting Started
 
