@@ -3,6 +3,7 @@ package main
 import (
 	"log"
 	"os"
+	"fmt"
 
 	config "github.com/Faizan2005/Golang_Coding_Assessment_Makerble/config"
 	models "github.com/Faizan2005/Golang_Coding_Assessment_Makerble/models"
