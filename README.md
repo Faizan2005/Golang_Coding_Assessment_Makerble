@@ -32,90 +32,125 @@ This project provides a robust backend for managing patient records, complete wi
 
 Follow these simple steps to get the API running on your local machine.
 
+# Project Setup Guide
+
 ### Prerequisites
 
 Before you begin, ensure you have the following installed on your system:
 
-1.  **Git**: For cloning the repository.
-    
-2.  **Go (Golang)**: Version 1.22 or higher.
-    
-    *   [Download Go](https://golang.org/doc/install "null")
-        
-3.  **PostgreSQL**: A running PostgreSQL instance (with its command-line client `psql`) that your application can connect to.
-    
-    *   If you don't have PostgreSQL installed, you can follow installation instructions for your operating system (e.g., [PostgreSQL Downloads](https://www.postgresql.org/download/ "null")).
-        
-    *   Alternatively, for a quick setup, you can run a PostgreSQL instance using Docker:
-        
-            docker run --name some-postgres -e POSTGRES_PASSWORD=mysecretpassword -p 5432:5432 -d postgres
-            
-        
-        (Replace `mysecretpassword` with a strong password).
-        
+- **Git**: For cloning the repository.  
+- **Go (Golang)**: Version 1.22 or higher.  
+  [Download Go](https://go.dev/dl/)  
+- **Docker**: Required to run PostgreSQL using a container.  
+  [Download Docker Desktop](https://www.docker.com/products/docker-desktop)
 
-### Project Setup
+> You do **not** need to install PostgreSQL or psql locally.
 
-1.  **Clone the Repository:** Open your terminal or command prompt and clone the project:
-    
-        git clone https://github.com/Faizan2005/Golang_Coding_Assessment_Makerble.git
-        cd Golang_Coding_Assessment_Makerble
-        
-    
-2.  **Create Your Environment File (`.env`):** This file stores your sensitive configuration (like database credentials and JWT secret) and is **not committed to Git** for security reasons.
-    
-    *   Create a new file named `.env` in the **root of your project directory**:
-        
-            touch .env
-            
-        
-    *   Open `.env` in a text editor and paste the following content. **Crucially, replace placeholder values with your actual PostgreSQL connection details and a strong `JWT_SECRET`.**
-        
-            # .env - Environment variables for the application
-            DB_USER=your_postgres_user      # e.g., postgres
-            DB_PASSWORD=your_postgres_password 
-            DB_NAME=hospital
-            DB_HOST=localhost               # Or your DB host IP/hostname (e.g., if using Docker, it might be the container's IP or a specific host)
-            DB_PORT=5432
-            JWT_SECRET=cjnvjerfg48unvbjirnv9854hg8945tu895hgf8tu34
-            LISTEN_ADDR=3000               # Port your Go app will listen on
-            
-        
-        *   **Important:** Ensure your `JWT_SECRET` is a long, random string for security.
-            
-3.  **Manually Set Up the PostgreSQL Database and Schema:** You need to create the database and its tables in your PostgreSQL instance.
-    
-    *   **a. Create the Database:** Open your PostgreSQL client (like `psql` in your terminal) and connect to your PostgreSQL server (e.g., using `psql -U postgres`). Then, create the database (if it doesn't already exist):
-        
-            CREATE DATABASE hospital;
-            
-        
-        (Replace `hospital` with the `DB_NAME` you've set in your `.env` file if different).
-        
-    *   **b. Apply the Schema:** Navigate to your project's root directory in the terminal. Then, use the `psql` command to execute the schema script:
-        
-            psql -U your_postgres_user -d hospital -h localhost -p 5432 -f ./migrations/init.sql
-            
-        
-        *   Replace `your_postgres_user` with the username you've configured for your PostgreSQL.
-            
-        *   Ensure `hospital`, `localhost`, and `5432` match your `DB_NAME`, `DB_HOST`, and `DB_PORT` from your `.env` file.
-            
-        *   You will be prompted for your PostgreSQL password.
-            
-4.  **Install Go Dependencies:**
-    
-        go mod tidy
-        
-    
-5.  **Run the Go Application using Makefile:** This command will build your Go application and then run it, using the environment variables from your `.env` file for database connection.
-    
-        make run
-        
-    
-    *   Look for the message: `Application starting on :3000` (or whatever `LISTEN_ADDR` you set).
-        
-    *   Once this message appears, your API is up and running on `http://localhost:3000`.
+---
+
+### Step 1: Clone the Repository
+
+```bash
+git clone https://github.com/Faizan2005/Golang_Coding_Assessment_Makerble.git
+cd Golang_Coding_Assessment_Makerble
+```
+
+---
+
+### Step 2: Set Up PostgreSQL with Docker
+
+Start a PostgreSQL instance using Docker:
+
+```bash
+docker run --name some-postgres -e POSTGRES_PASSWORD=mysecretpassword -p 5432:5432 -d postgres
+```
+
+This starts a container with:
+- Username: `postgres` (default)
+- Password: `mysecretpassword`
+- Port: `5432`
+
+---
+
+### Step 3: Create the Database Inside Docker
+
+Access the PostgreSQL container:
+
+```bash
+docker exec -it some-postgres psql -U postgres
+```
+
+Inside the PostgreSQL shell, run:
+
+```sql
+CREATE DATABASE hospital;
+\q
+```
+
+This creates the `hospital` database.
+
+---
+
+### Step 4: Apply the Schema Using Docker
+
+Schema file is located at `./migrations/init.sql`, copy it into the container:
+
+```bash
+docker cp ./migrations/init.sql some-postgres:/init.sql
+```
+
+Then apply the schema:
+
+```bash
+docker exec -it some-postgres psql -U postgres -d hospital -f /init.sql
+```
+
+---
+
+### Step 5: Create the `.env` File
+
+Create a `.env` file in the root of your project with the following content:
+
+```env
+# .env - Environment variables for the application
+DB_USER=postgres
+DB_PASSWORD=mysecretpassword
+DB_NAME=hospital
+DB_HOST=localhost
+DB_PORT=5432
+JWT_SECRET=cjnvjerfg48unvbjirnv9854hg8945tu895hgf8tu34
+LISTEN_ADDR=3000
+```
+
+Make sure the values here match your Docker configuration.
+
+---
+
+### Step 6: Install Go Dependencies
+
+```bash
+go mod tidy
+```
+
+---
+
+### Step 7: Run the Application
+
+```bash
+go run main.go
+```
+
+Once the app starts, you should see a message like:
+
+```
+Application starting on :3000
+Connected to database!
+```
+
+The API is now running at:  
+**http://localhost:3000**
+
+---
 
 ## How to Use the API
 
